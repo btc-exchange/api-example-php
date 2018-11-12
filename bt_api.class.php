@@ -96,6 +96,7 @@ class Bt_Api
 
         // any extra headers
         $headers = [
+            'x-api-key' => self::$api_key,
             'Authorization: Bearer ' . ($aToken['status'] ? $aToken['data'] : ''),
         ];
 
