@@ -3,22 +3,29 @@ require_once './JWT/JWToken.php';
 
 class Bt_Api
 {
-    private static $ch = NULL;
-
+    private static $ch = null;
     private static $api_url = 'https://api.btc-exchange.com/';
     private static $api_key = '';
     private static $priv_key_file = '';
     private static $priv_key = '';
 
-    function __construct()
+    public function __construct()
     {
     }
 
+    /**
+     * Set api key
+     * @param string $api_key api key
+     */
     public function setApiKey($api_key)
     {
         self::$api_key = $api_key;
     }
 
+    /**
+     * Set private key path
+     * @param $priv_key_file
+     */
     public function setPrivKeyFile($priv_key_file)
     {
         self::$priv_key_file = $priv_key_file;
@@ -26,11 +33,19 @@ class Bt_Api
     }
 
 
+    /**
+     * Get profile data
+     * @return mixed
+     */
     public function getMe()
     {
         return  $this->execute('papi/web/members/me', [], 'get');
     }
 
+    /**
+     * Generate JWT token for signing
+     * @return string JWT token
+     */
     private function generateJwtToken()
     {
         $str = 'QWERTYUIOPASDFGHJKLZXCVBNM1234567890';
@@ -57,37 +72,48 @@ class Bt_Api
         $headers = ['x-api-key' => self::$api_key ];
 
         // our curl handle (initialize if required)
-        if (is_null(self::$ch))
-        {
+        if (is_null(self::$ch)) {
             self::$ch = curl_init();
             curl_setopt(self::$ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt(self::$ch, CURLOPT_USERAGENT,
-                'Mozilla/4.0 (compatible; PHP Client; ' . php_uname('s') . '; PHP/' .
-                phpversion() . ')');
+            curl_setopt(
+                self::$ch,
+                CURLOPT_USERAGENT,
+                'Mozilla/4.0 (compatible; PHP Client; ' . php_uname('s') . '; PHP/' . phpversion() . ')'
+            );
         }
 
         curl_setopt(self::$ch, CURLOPT_URL, self::$api_url . 'pauth/web/sessions/generate_jwt');
         curl_setopt(self::$ch, CURLOPT_POST, 1);
         curl_setopt(self::$ch, CURLOPT_POSTFIELDS, $post_data);
-
         curl_setopt(self::$ch, CURLOPT_HTTPHEADER, $headers);
 
         // run the query
         $res = curl_exec(self::$ch);
 
-        if ($res === false){
-            return $this->error('Could not get reply: ('.self::$api_url . 'pauth/web/sessions/generate_jwt) ' . curl_error(self::$ch));
+        if ($res === false) {
+            return $this->error(
+                'Could not get reply: ('.self::$api_url . 'pauth/web/sessions/generate_jwt) ' . curl_error(self::$ch)
+            );
         }
 
         $dec = json_decode($res, true);
 
-        if (empty($dec['token']))
-            return $this->error('Invalid data received, please make sure connection is working and requested API exists: ' . $res);
+        if (isset($dec['token']) === false) {
+            return $this->error(
+                'Invalid data received, please make sure connection is working and requested API exists: ' . $res
+            );
+        }
 
         return $this->success($dec['token']);
     }
 
-
+    /**
+     * Execute query
+     * @param string $path
+     * @param $req
+     * @param string $method
+     * @return mixed
+     */
     private function execute($path, $req, $method = 'post')
     {
 
@@ -108,13 +134,13 @@ class Bt_Api
         }
 
         curl_setopt(self::$ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt(self::$ch, CURLOPT_USERAGENT,
-            'Mozilla/4.0 (compatible; PHP Client; ' . php_uname('s') . '; PHP/' .
-            phpversion() . ')');
+        curl_setopt(
+            self::$ch,
+            CURLOPT_USERAGENT,
+            'Mozilla/4.0 (compatible; PHP Client; ' . php_uname('s') . '; PHP/' . phpversion() . ')'
+        );
 
-
-        if ($method == 'post')
-        {
+        if ($method === 'post') {
             curl_setopt(self::$ch, CURLOPT_URL, self::$api_url . $path);
             curl_setopt(self::$ch, CURLOPT_POST, 1);
             curl_setopt(self::$ch, CURLOPT_POSTFIELDS, $post_data);
@@ -135,9 +161,9 @@ class Bt_Api
         return ['status' => false, 'message' => $sMessage];
     }
 
+
     private function success($mData = null)
     {
         return ['status' => true, 'data' => $mData];
     }
-
 }
